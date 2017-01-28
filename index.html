@@ -1,0 +1,138 @@
+<head>
+  <meta charset="utf-8">
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+  <style>
+    .area{
+       stroke-width: 1;
+       stroke:#fff;
+    }
+  </style>
+</head>
+<!-- http://bl.ocks.org/codementum/2ee76715d716e59efab283ce915de740 -->
+<body>
+  <script>
+
+  var parseTime = d3.utcParse("%Y-%m-%d");
+
+  var tooltip = d3.select("body")
+    .append("div")
+    .attr("class", "remove")
+    .style("position", "absolute")
+    .style("z-index", "20")
+    .style("visibility", "hidden")
+    .style("top", "30px")
+    .style("left", "55px");
+
+  d3.json('weeks-and-points.json',function(weeks) {
+    var data = [];
+    var idsObj = {};
+    var ids = [];
+
+    var tops= ["a092",
+  "d643",
+  "s402",
+  "f324",
+  "k293",
+  "n409",
+  "s741",
+  "h432",
+  "r255",
+  "m605",
+  "k267",
+  "r286",
+  "f316",
+  "r485",
+  "mc10"];
+
+  var names = ["Andre Agassi",
+"novak-djokovic",
+"ete-sampras",
+"roger-federer",
+"gustavo-kuerten",
+"rafael-nadal",
+"marat-safin",
+"lleyton-hewitt",
+"patrick-rafter",
+"carlos-moya",
+"yevgeny-kafelnikov",
+"marcelo-rios",
+"juan-carlos-ferrero",
+"andy-roddick",
+"andy-murray"];
+
+    for(var idx in weeks){
+      weeks[idx].week = parseTime(idx);
+      data.push(weeks[idx]);
+      for(id in weeks[idx]){
+        idsObj[id] = 0;
+      }
+    }
+    for(id in idsObj){
+      ids.push(id);
+    }
+    for(var i =0;i<data.length;i++){
+      for(var j =0;j<ids.length;j++){
+        if(!data[i][ids[j]]){
+            data[i][ids[j]] = 0;
+        }
+      }
+    }
+
+    data = data.sort(function (a,b) {
+      return a.week - b.week;
+    })
+var stack = d3.stack()
+    .keys(tops)
+    .order(d3.stackOrderNone)
+    .offset(d3.stackOffsetWiggle);
+
+var series = stack(data);
+
+var width = 5500,
+    height = 500;
+
+var x = d3.scaleTime()
+    .domain(d3.extent(data, function(d){ return d.week; }))
+    .range([0, width]);
+
+var xAxis = d3.axisBottom(x);
+
+var y = d3.scaleLinear()
+    .domain([0, d3.max(series, function(layer) { return d3.max(layer, function(d){  return d[0] + d[1];}); })])
+    .range([9*height/10, -height/2]);
+
+var color = d3.scaleLinear()
+.domain([0,tops.length-1]);
+
+var area = d3.area()
+    .x(function(d) { return x(d.data.week); })
+    .y0(function(d) { return y(d[0]); })
+    .y1(function(d) { return y(d[1]); })
+    // .curve(d3.curveBasis);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height*1.5);
+
+svg.selectAll("path")
+    .data(series)
+    .enter().append("path")
+    .attr("transform", "translate(0," + (0) + ")")
+    .attr("class","area")
+    .attr("d", area)
+    .style("fill", function(d,i) {
+        return d3.interpolateSpectral(color(i));
+    })
+    .on("mousemove", function(d, i) {
+      console.log(tops[i]);
+      console.log(names[i]);
+    });
+
+svg.append("g")
+            .attr("class", "axis axis--x")
+            .attr("transform", "translate(0," + (height) + ")")
+            .call(xAxis);
+          });
+  </script>
+</body>
